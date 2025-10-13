@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+fe/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Build outputs
+fe/dist/
+fe/build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Docker
+.docker/
+
+# Backup files
+*backup*
+*.bak
+
+# Coverage reports
+coverage/
+*.cover
+*.coverage
+
+# Go module cache
+# (removed - no Go modules in this workspace)
+
+# Frontend build artifacts
+fe/.vite/
+fe/.turbo/
+
+# Database migrations (if any)
+*.sql.backup

@@ -1,0 +1,206 @@
+/* Cleaned globals.css (single canonical file).
+   Duplicate and stray fragments removed; visual tokens and utilities preserved.
+*/
+
+/* Optional Tailwind custom variant - keep commented unless plugin is present */
+/* @custom-variant dark (&:is(.dark *)); */
+
+:root {
+  --font-size: 16px;
+  --background: #f8f9fa;
+  --foreground: #1B3C53;
+  --card: #ffffff;
+  --card-foreground: #1B3C53;
+  --popover: #ffffff;
+  --popover-foreground: #1B3C53;
+  --primary: #1B3C53;
+  --primary-foreground: #ffffff;
+  --secondary: #D2C1B6;
+  --secondary-foreground: #1B3C53;
+  --muted: #e2e8f0;
+  --muted-foreground: #1B3C53;
+  --accent: #D2C1B6;
+  --accent-foreground: #1B3C53;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: transparent;
+  --input-background: #ffffff;
+  --switch-background: #d1d5db;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --font-weight-semibold: 600;
+  --ring: #234C6A;
+  --chart-1: #1B3C53;
+  --chart-2: #234C6A;
+  --chart-3: #456882;
+  --chart-4: #D2C1B6;
+  --chart-5: #10b981;
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1B3C53;
+  --sidebar-primary: #1B3C53;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f9fafb;
+  --sidebar-accent-foreground: #1B3C53;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #234C6A;
+}
+
+.dark {
+  --background: #0d1821;
+  --foreground: #f8f9fa;
+  --card: #1B3C53;
+  --card-foreground: #f8f9fa;
+  --popover: #1B3C53;
+  --popover-foreground: #f8f9fa;
+  --primary: #456882;
+  --primary-foreground: #ffffff;
+  --secondary: #D2C1B6;
+  --secondary-foreground: #1B3C53;
+  --muted: #1B3C53;
+  --muted-foreground: #f8f9fa;
+  --accent: #234C6A;
+  --accent-foreground: #f8f9fa;
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+  --success: #34d399;
+  --success-foreground: #ffffff;
+  --warning: #fbbf24;
+  --warning-foreground: #ffffff;
+  --border: #234C6A;
+  --input: #1B3C53;
+  --ring: #456882;
+}
+
+/* Semantic mappings */
+:root {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* Base resets and fallbacks */
+@layer base {
+  * { box-shadow: none; border-color: var(--color-border); }
+  body { background-color: var(--color-background); color: var(--color-foreground); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+}
+
+/* Base typography */
+@layer base {
+  h1 { font-size: var(--text-2xl); font-weight: var(--font-weight-semibold); }
+  h2 { font-size: var(--text-xl);  font-weight: var(--font-weight-semibold); }
+  h3 { font-size: var(--text-lg);  font-weight: var(--font-weight-semibold); }
+  p  { font-size: var(--text-base); font-weight: var(--font-weight-normal); }
+  label { font-size: var(--text-base); font-weight: var(--font-weight-medium); }
+}
+
+html { font-size: var(--font-size); scroll-behavior: smooth; }
+
+/* Animations */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shimmer  { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+.animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+
+/* Glassmorphism */
+.glass { background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.4); }
+.dark .glass { background: rgba(27,60,83,0.8); border: 1px solid rgba(255,255,255,0.1); }
+
+/* Shadows */
+.shadow-premium { box-shadow: 0 1px 2px rgba(27,60,83,0.05), 0 4px 8px rgba(27,60,83,0.08), 0 12px 24px rgba(27,60,83,0.12); }
+.shadow-premium-lg { box-shadow: 0 2px 4px rgba(27,60,83,0.06), 0 8px 16px rgba(27,60,83,0.1), 0 20px 40px rgba(27,60,83,0.15); }
+
+/* Patterns */
+.pattern-dots { background-image: radial-gradient(rgba(27,60,83,0.1) 1px, transparent 1px); background-size: 20px 20px; }
+.dark .pattern-dots { background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px); }
+.pattern-grid { background-image: linear-gradient(rgba(27,60,83,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(27,60,83,0.05) 1px, transparent 1px); background-size: 50px 50px; }
+.dark .pattern-grid { background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Utilities */
+.premium-card { background-color: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(0,0,0,0.04); transition: box-shadow .2s ease, transform .2s ease; }
+.premium-card:hover { box-shadow: 0 8px 24px rgba(27,60,83,0.12); transform: translateY(-1px); }
+.premium-btn { background-color: var(--primary); color: var(--primary-foreground); border-radius: calc(var(--radius) - 4px); padding: 0.625rem 1.25rem; font-weight: 600; }
+.premium-btn--outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+.premium-shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.premium-shadow-lg { box-shadow: 0 10px 20px rgba(27,60,83,0.16); }
+.premium-header { background-color: var(--color-primary); color: var(--color-primary-foreground); }
+.premium-sidebar { background: var(--sidebar); color: var(--sidebar-foreground); }
+
+/* Ensure any element using the muted background has an accessible foreground */
+.bg-muted { background-color: var(--color-muted) !important; color: var(--color-muted-foreground) !important; }
+
+/* When an element combines bg-muted and text-white, prefer the muted-foreground
+   so the text is readable in both light and dark themes. */
+.bg-muted.text-white { color: var(--color-muted-foreground) !important; text-shadow: none; }
+
+/* Header-specific adjustments: make muted pills readable on the dark header */
+.premium-header .bg-muted { background-color: rgba(255,255,255,0.10) !important; color: var(--primary) !important; border: none !important; }
+.dark .premium-header .bg-muted { background-color: rgba(255,255,255,0.12) !important; color: var(--primary) !important; }
+
+/* Header pill utilities */
+.header-pill-active { background-color: #ffffff; color: var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+.header-pill-inactive { background-color: rgba(255,255,255,0.06); color: rgba(255,255,255,0.72); }
+
+.smooth-transition { transition: all .2s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* CTA banner: darker gradient fallback & readable white text */
+:root { --color-primary-dark: #0f2a36; }
+.dark { --color-primary-dark: #12303f; }
+.cta-banner {
+  background: linear-gradient(135deg, var(--color-primary-dark, #0f2a36), var(--color-primary, #1B3C53));
+  color: var(--color-primary-foreground, #ffffff);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.45);
+}
+.cta-banner .premium-btn--outline { background: rgba(255,255,255,0.96); color: var(--color-primary); }
+
