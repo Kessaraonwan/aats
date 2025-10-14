@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { JobCard, JobFilters } from '../../components/candidate';
-import { mockJobs } from '../../data/mockData';
+import { jobService } from '../../services/jobService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
 import { ArrowUpDown, SlidersHorizontal } from 'lucide-react';
@@ -15,46 +15,59 @@ export function JobsListPage({ onApply }) {
   });
   const [sortBy, setSortBy] = useState('date-desc');
   const [isLoading, setIsLoading] = useState(true);
+  const [jobs, setJobs] = useState([]);
 
   useEffect(() => {
-    // Simulate initial loading
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
+    let mounted = true;
+    (async () => {
+      try {
+        const resp = await jobService.getJobs(); // { data, meta }
+        if (mounted) setJobs(resp.data || []);
+      } catch (err) {
+        console.error('failed to load jobs', err);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
   const filteredJobs = useMemo(() => {
-    let jobs = mockJobs.filter((job) => {
-      const matchesSearch = 
-        job.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        job.description.toLowerCase().includes(filters.search.toLowerCase());
-      
-      const matchesLocation = filters.location === 'all' || job.location === filters.location;
-      const matchesDepartment = filters.department === 'all' || job.department === filters.department;
-      const matchesExperience = filters.experienceLevel === 'all' || job.experienceLevel === filters.experienceLevel;
-
-      return matchesSearch && matchesLocation && matchesDepartment && matchesExperience && job.status === 'active';
+    // apply filters on jobs state
+    const list = (jobs || []).filter((job) => {
+      const title = (job.title || '').toString();
+      const desc = (job.description || '').toString();
+      const matchesSearch = title.toLowerCase().includes((filters.search || '').toLowerCase()) || desc.toLowerCase().includes((filters.search || '').toLowerCase());
+      const matchesLocation = filters.location === 'all' || (job.location || 'all') === filters.location;
+      const matchesDepartment = filters.department === 'all' || (job.department || 'all') === filters.department;
+      const matchesExperience = filters.experienceLevel === 'all' || (job.experienceLevel || 'all') === filters.experienceLevel;
+      return matchesSearch && matchesLocation && matchesDepartment && matchesExperience && (job.status || 'active') === 'active';
     });
 
-    // Apply sorting
-    jobs.sort((a, b) => {
-      switch (sortBy) {
-        case 'date-desc':
-          return new Date(b.postedDate) - new Date(a.postedDate);
-        case 'date-asc':
-          return new Date(a.postedDate) - new Date(b.postedDate);
-        case 'title-asc':
-          return a.title.localeCompare(b.title, 'th');
-        case 'title-desc':
-          return b.title.localeCompare(a.title, 'th');
-        case 'closing-soon':
-          return new Date(a.closingDate) - new Date(b.closingDate);
-        default:
-          return 0;
+    // sorting
+    list.sort((a, b) => {
+      try {
+        switch (sortBy) {
+          case 'date-desc':
+            return new Date(b.postedDate || b.created_at) - new Date(a.postedDate || a.created_at);
+          case 'date-asc':
+            return new Date(a.postedDate || a.created_at) - new Date(b.postedDate || b.created_at);
+          case 'title-asc':
+            return (a.title || '').localeCompare(b.title || '', 'th');
+          case 'title-desc':
+            return (b.title || '').localeCompare(a.title || '', 'th');
+          case 'closing-soon':
+            return new Date(a.closingDate || a.closing_date || 0) - new Date(b.closingDate || b.closing_date || 0);
+          default:
+            return 0;
+        }
+      } catch (e) {
+        return 0;
       }
     });
 
-    return jobs;
-  }, [filters, sortBy]);
+    return list;
+  }, [jobs, filters, sortBy]);
 
   return (
     <div className="min-h-screen bg-gray-50">

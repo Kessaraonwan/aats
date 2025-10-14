@@ -13,8 +13,13 @@ AATS (Applicant Tracking System) เป็นระบบจัดการก�
 
 ## 🚀 เทคโนโลยีที่ใช้
 
-### Backend
-The original backend folder (`be/`) has been removed from this workspace. The frontend (`fe/`) ships with mock data and adapters that allow running the UI without a local backend. If you need the backend later, restore it from your backups or the original repository.
+### Backend (be/)
+- **Go 1.21** - Programming Language
+- **Gin Framework** - Web Framework
+- **GORM** - ORM สำหรับจัดการฐานข้อมูล
+- **PostgreSQL** - ฐานข้อมูลหลัก
+- **JWT** - Authentication & Authorization
+- **Docker** - Containerization
 
 ### Frontend (fe/)
 - **React 18** - UI Framework
@@ -45,15 +50,26 @@ The original backend folder (`be/`) has been removed from this workspace. The fr
 
 ```
 AATS/
+├── be/                     # Backend (Go + Gin)
+│   ├── handlers/          # API Handlers
+│   ├── middleware/        # Authentication Middleware
+│   ├── models/           # Database Models
+│   ├── routes/           # API Routes
+│   ├── utils/            # Utility Functions
+│   ├── main.go           # Entry Point
+│   ├── go.mod            # Go Dependencies
+│   └── Dockerfile        # Docker Configuration
+│
 ├── fe/                     # Frontend (React + Vite)
 │   ├── src/
 │   │   ├── components/   # React Components
 │   │   ├── pages/        # Page Components
-│   │   ├── services/     # API Services (adapters use mock data)
+│   │   ├── services/     # API Services
 │   │   └── utils/        # Utility Functions
 │   ├── package.json      # Node Dependencies
 │   └── vite.config.js    # Vite Configuration
 │
+├── backend/prisma/         # Database Schema (Prisma)
 ├── scripts/               # Utility Scripts
 └── docs/                  # Documentation Files
 ```
@@ -72,11 +88,20 @@ git clone [repository-url]
 cd AATS
 ```
 
+### 2. Setup Backend
+```bash
+cd be
+
 # Install dependencies
+go mod tidy
+
 # Setup environment
+cp .env.example .env
+# แก้ไข .env ตามการตั้งค่าของคุณ
+
 # Start server
-### Backend
-The backend has been removed from this workspace. The frontend can run with mock data. See `fe/README.md` for running the frontend with mocks or pointing to a remote API.
+go run main.go
+```
 
 ### 3. Setup Frontend
 ```bash
@@ -116,16 +141,19 @@ docker-compose logs -f
 - [UI/UX Guidelines](./UI-UPDATE-PLAN.md)
 - [System Architecture](./SYSTEM-DOCUMENTATION.md)
 - [API Documentation](./PROJECT_CONTEXT.md)
- - [สรุปโครงการ (ภาษาไทย)](./docs/PROJECT_SUMMARY_TH.md)
 
 ## 🚀 Quick Start
 
 ```bash
-# Start Frontend
-cd fe && npm install && npm run dev
+# Start Backend
+cd be && go run main.go
+
+# Start Frontend (new terminal)
+cd fe && npm run dev
 
 # Access Application
 # Frontend: http://localhost:5173
+# Backend API: http://localhost:8080
 ```
 
 ## 🧪 Testing

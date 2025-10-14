@@ -218,7 +218,7 @@ export const mockApplications = [
       duration: '3 ปี'
     },
     skills: ['Hardware Repair', 'Software Installation', 'Network Troubleshooting', 'CompTIA A+', 'Network+'],
-    status: 'screening',
+  status: 'screening',
     submittedDate: '2025-10-01',
     preScreeningScore: 92,
     notes: [],
@@ -236,6 +236,19 @@ export const mockApplications = [
         description: 'HR กำลังตรวจสอบใบสมัคร - มีใบประกาศนียบัตร A+ และ N+'
       }
     ]
+    ,
+    evaluation: {
+      id: 'eval-2',
+      evaluatorName: 'ประภา ช่างเทคนิค',
+      technicalSkills: 4,
+      communication: 4,
+      problemSolving: 4,
+      cultureFit: 4,
+      overallScore: 4.0,
+      hiringRecommendation: 'recommend',
+      comments: 'มีความรู้ความสามารถเหมาะสมกับตำแหน่ง แนะนำให้รับเข้าทำงาน',
+      evaluatedAt: '2025-10-03'
+    }
   },
   {
     id: 'app-3',
@@ -258,7 +271,7 @@ export const mockApplications = [
       duration: '3 เดือน'
     },
     skills: ['การตลาด', 'บริการลูกค้า', 'ภาษาอังกฤษพื้นฐาน', 'MS Office'],
-    status: 'submitted',
+  status: 'submitted',
     submittedDate: '2025-10-05',
     preScreeningScore: 78,
     notes: [],
@@ -270,6 +283,19 @@ export const mockApplications = [
         description: 'ส่งใบสมัครเรียบร้อย'
       }
     ]
+    ,
+    evaluation: {
+      id: 'eval-3',
+      evaluatorName: 'สมศักดิ์ ผู้นำทีม',
+      technicalSkills: 3,
+      communication: 4,
+      problemSolving: 3,
+      cultureFit: 4,
+      overallScore: 3.5,
+      hiringRecommendation: 'request-interview',
+      comments: 'น่าสนใจ แต่ต้องการสัมภาษณ์เพิ่มเติมเพื่อประเมินความเหมาะสม',
+      evaluatedAt: '2025-10-06'
+    }
   },
   {
     id: 'app-4',
@@ -788,3 +814,28 @@ export const testCredentials = {
     department: 'ฝ่ายขาย'
   }
 };
+
+// Persist mock applications to window for dev/HMR resilience
+try {
+  if (typeof window !== 'undefined') {
+    window.__mockApplications = window.__mockApplications || mockApplications;
+  }
+} catch (e) {
+  // ignore
+}
+
+// Persist mock notifications for dev mode
+try {
+  if (typeof window !== 'undefined' && !window.__mockNotifications) {
+    window.__mockNotifications = [
+      { id: 'notif-1', type: 'success', title: 'คุณได้รับเชิญเข้าสัมภาษณ์!', message: 'สำหรับตำแหน่ง Senior Frontend Developer - กรุณาตรวจสอบอีเมลเพื่อดูรายละเอียดและยืนยันนัดหมาย', date: '2025-10-08T10:30:00', read: false, actionLabel: 'ดูรายละเอียด' },
+      { id: 'notif-2', type: 'info', title: 'ใบสมัครของคุณกำลังถูกตรวจสอบ', message: 'ทีม HR กำลังพิจารณาใบสมัครของคุณสำหรับตำแหน่ง Backend Developer', date: '2025-10-07T14:20:00', read: false },
+      { id: 'notif-3', type: 'email', title: 'อีเมลจากทีม HR', message: 'คุณได้รับอีเมลใหม่เกี่ยวกับการสัมภาษณ์งาน - กรุณาตรวจสอบกล่องจดหมายของคุณ', date: '2025-10-06T09:15:00', read: true },
+      { id: 'notif-4', type: 'warning', title: 'เตือน: กำหนดเวลายืนยันการสัมภาษณ์', message: 'กรุณายืนยันการเข้าสัมภาษณ์ภายในวันที่ 10 ตุลาคม 2025', date: '2025-10-05T16:45:00', read: false },
+      { id: 'notif-5', type: 'info', title: 'ใบสมัครได้รับการบันทึกแล้ว', message: 'ขอบคุณที่สมัครงานกับเรา ใบสมัครของคุณถูกบันทึกเรียบร้อยแล้ว', date: '2025-10-04T11:00:00', read: true },
+      { id: 'notif-6', type: 'success', title: 'ยินดีด้วย! ผ่านการคัดเลือกรอบแรก', message: 'คุณผ่านการคัดเลือกเบื้องต้นสำหรับตำแหน่ง UX/UI Designer', date: '2025-10-03T13:30:00', read: false }
+    ];
+  }
+} catch (e) {
+  // ignore
+}

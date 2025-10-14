@@ -1,16 +1,44 @@
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader } from '../../components/ui/card';
-import { mockApplications, mockJobs } from '../../data/mockData';
 import { Users, Briefcase, Clock, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
+import { jobService } from '../../services/jobService';
+import { applicationService } from '../../services/applicationService';
 
 export function HRDashboardPage() {
-  const totalApplications = mockApplications.length;
-  const activeJobs = mockJobs.filter(job => job.status === 'active').length;
-  const pendingReview = mockApplications.filter(app => app.status === 'submitted' || app.status === 'screening').length;
-  const offers = mockApplications.filter(app => app.status === 'offer').length;
+  const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const recentApplications = mockApplications
-    .sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime())
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setIsLoading(true);
+        const jobsResp = await jobService.getJobs(); // { data, meta }
+        const appsResp = await applicationService.getApplications(); // returns { data, meta } per api interceptor
+        if (!mounted) return;
+        setJobs(jobsResp?.data || []);
+        // applicationService returns response.data (axios interceptor returns data) - keep compatible
+        const appsData = Array.isArray(appsResp?.data) ? appsResp.data : appsResp || [];
+        // sometimes api wrapper returns { data, meta } already — normalize
+        setApplications(appsData);
+      } catch (err) {
+        console.error('failed to load HR dashboard data', err);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const totalApplications = applications.length;
+  const activeJobs = jobs.filter(job => (job.status || 'active') === 'active').length;
+  const pendingReview = applications.filter(app => app.status === 'submitted' || app.status === 'screening').length;
+  const offers = applications.filter(app => app.status === 'offer').length;
+
+  const recentApplications = [...applications]
+    .sort((a, b) => new Date(b.created_at || b.submittedDate || b.submitted_at || 0) - new Date(a.created_at || a.submittedDate || a.submitted_at || 0))
     .slice(0, 5);
 
   const stats = [
@@ -110,12 +138,15 @@ export function HRDashboardPage() {
               {recentApplications.map((app) => (
                 <div key={app.id} className="flex items-start justify-between gap-4 pb-4 border-b last:border-0">
                   <div className="flex-1">
-                    <p>{app.candidateName}</p>
-                    <p className="text-muted-foreground">{app.jobTitle}</p>
+                    <p>{app?.data?.candidateName || app.candidateName || app.name || '—'}</p>
+                    <p className="text-muted-foreground">{app?.data?.jobTitle || app.jobTitle || (() => {
+                      const j = jobs.find(jj => jj.id === app.job_id || jj.id === app.jobId);
+                      return j ? j.title : '';
+                    })()}</p>
                   </div>
                   <div className="text-right">
                     <Badge variant="secondary">{statusLabels[app.status]}</Badge>
-                    <p className="text-muted-foreground mt-1">{formatDate(app.submittedDate)}</p>
+                    <p className="text-muted-foreground mt-1">{formatDate(app.created_at || app.submittedDate || app.submitted_at)}</p>
                   </div>
                 </div>
               ))}
@@ -129,8 +160,8 @@ export function HRDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockJobs.slice(0, 5).map((job) => {
-                const applicantCount = mockApplications.filter(app => app.jobId === job.id).length;
+              {jobs.slice(0, 5).map((job) => {
+                const applicantCount = applications.filter(app => (app.job_id === job.id || app.jobId === job.id)).length;
                 return (
                   <div key={job.id} className="flex items-center justify-between pb-4 border-b last:border-0">
                     <div className="flex-1">
@@ -162,8 +193,8 @@ export function HRDashboardPage() {
               offer: { label: 'เสนอตำแหน่ง' },
               rejected: { label: 'ไม่ผ่าน' }
             }).map(([status, { label }]) => {
-              const count = mockApplications.filter(app => app.status === status).length;
-              const percentage = ((count / totalApplications) * 100).toFixed(0);
+              const count = applications.filter(app => app.status === status).length;
+              const percentage = totalApplications > 0 ? ((count / totalApplications) * 100).toFixed(0) : '0';
               
               return (
                 <div key={status} className="premium-card text-center p-4">

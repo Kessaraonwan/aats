@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { applicationService } from '../../services/applicationService';
 import { mockApplications } from '../../data/mockData';
+
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || import.meta.env.MODE === 'development';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -9,7 +12,53 @@ import {
 } from 'lucide-react';
 
 export function HMDashboardPage({ onNavigate }) {
+  const instanceId = Math.random().toString(36).slice(2,8);
   const [timeRange, setTimeRange] = useState('month'); // week, month, quarter, year
+  const [applications, setApplications] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.__mockApplications) return window.__mockApplications;
+    } catch (e) {}
+    return [];
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    try { console.debug(`[HMDashboard:${instanceId}] useEffect mount`); } catch(e){}
+    (async () => {
+      try {
+        if (USE_MOCK) {
+          // use mockApplications directly in dev/mock mode
+          if (!mounted) return;
+          // persist mock on window so HMR won't clear it
+          const src = (typeof window !== 'undefined' && window.__mockApplications) ? window.__mockApplications : mockApplications;
+          if (typeof window !== 'undefined') window.__mockApplications = src;
+          try {
+            const windowSrc = (typeof window !== 'undefined' && window.__mockApplications) ? window.__mockApplications : [];
+            const currentIds = Array.isArray(windowSrc) ? windowSrc.map(a => a.id).join(',') : '';
+            const srcIds = Array.isArray(src) ? src.map(a => a.id).join(',') : '';
+            if (currentIds !== srcIds) {
+              if (typeof window !== 'undefined') window.__mockApplications = src;
+              setApplications(src);
+              try { console.debug(`[HMDashboard:${instanceId}] setApplications(mock) count=`, src.length); } catch(e){}
+            } else {
+              try { console.debug(`[HMDashboard:${instanceId}] skip setApplications(mock) - no change`); } catch(e){}
+            }
+          } catch (e) {
+            if (typeof window !== 'undefined') window.__mockApplications = src;
+            setApplications(src);
+          }
+          return;
+        }
+        const resp = await applicationService.getApplications();
+        const apps = Array.isArray(resp?.data) ? resp.data : resp || [];
+        if (!mounted) return;
+        setApplications(apps);
+      } catch (err) {
+        console.error('failed to load HMDashboard apps', err);
+      }
+    })();
+    return () => { mounted = false; try{ console.debug(`[HMDashboard:${instanceId}] unmount`);}catch(e){} };
+  }, []);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -27,9 +76,10 @@ export function HMDashboardPage({ onNavigate }) {
       }
     };
 
-    const filteredApps = mockApplications.filter(filterByTime);
-    const evaluatedApps = filteredApps.filter(app => app.evaluation);
-    const pendingApps = filteredApps.filter(app => app.status === 'interview' && !app.evaluation);
+  const filteredApps = applications.filter(filterByTime);
+  try { console.debug('[HMDashboard] applications=', applications.length, 'filteredApps=', filteredApps.length); } catch(e){}
+  const evaluatedApps = filteredApps.filter(app => app.evaluation);
+  const pendingApps = filteredApps.filter(app => app.status === 'interview' && !app.evaluation);
     
     // Calculate average score
     const avgScore = evaluatedApps.length > 0
@@ -74,7 +124,7 @@ export function HMDashboardPage({ onNavigate }) {
       lowScoreApps,
       evaluationRate: filteredApps.length > 0 ? Math.round((evaluatedApps.length / filteredApps.length) * 100) : 0
     };
-  }, [timeRange]);
+  }, [timeRange, applications]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

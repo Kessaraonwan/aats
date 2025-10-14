@@ -1,5 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { applicationService } from '../../services/applicationService';
 import { mockApplications } from '../../data/mockData';
+
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || import.meta.env.MODE === 'development';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -8,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Users, Clock, Search, Filter, ArrowUpDown, GraduationCap, Briefcase, Mail, Phone, Calendar, FileText } from 'lucide-react';
 
 export function HMReviewPage({ onReview }) {
+  const instanceId = Math.random().toString(36).slice(2,8);
   // State for filters and search
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPosition, setSelectedPosition] = useState('all');
@@ -15,20 +19,70 @@ export function HMReviewPage({ onReview }) {
   const [selectedScoreRange, setSelectedScoreRange] = useState('all');
   const [sortBy, setSortBy] = useState('date-desc'); // date-desc, date-asc, score-desc, score-asc, name-asc
 
-  // Get unique positions and departments from applications
-  const uniquePositions = useMemo(() => {
-    const positions = [...new Set(mockApplications.map(app => app.jobTitle))];
-    return positions.sort();
+  const [applications, setApplications] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.__mockApplications) return window.__mockApplications;
+    } catch (e) {}
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState(!((typeof window !== 'undefined' && window.__mockApplications)));
+
+  useEffect(() => {
+    let mounted = true;
+    try { console.debug(`[HMReviewPage:${instanceId}] useEffect mount`); } catch(e){}
+    (async () => {
+      try {
+        setIsLoading(true);
+        if (USE_MOCK) {
+          if (!mounted) return;
+          const src = (typeof window !== 'undefined' && window.__mockApplications) ? window.__mockApplications : mockApplications;
+          if (typeof window !== 'undefined') window.__mockApplications = src;
+          try {
+            const windowSrc = (typeof window !== 'undefined' && window.__mockApplications) ? window.__mockApplications : [];
+            const currentIds = Array.isArray(windowSrc) ? windowSrc.map(a => a.id).join(',') : '';
+            const srcIds = Array.isArray(src) ? src.map(a => a.id).join(',') : '';
+            if (currentIds !== srcIds) {
+              if (typeof window !== 'undefined') window.__mockApplications = src;
+              setApplications(src);
+              try { console.debug('[HMReviewPage] setApplications(mock) count=', src.length); } catch(e){}
+            } else {
+              try { console.debug('[HMReviewPage] skip setApplications(mock) - no change'); } catch(e){}
+            }
+          } catch (e) {
+            if (typeof window !== 'undefined') window.__mockApplications = src;
+            setApplications(src);
+          }
+          setIsLoading(false);
+          return;
+        }
+        const resp = await applicationService.getApplications();
+        const apps = Array.isArray(resp?.data) ? resp.data : resp || [];
+        if (!mounted) return;
+        setApplications(apps);
+      } catch (err) {
+        console.error('failed to load applications for HMReviewPage', err);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; try{ console.debug(`[HMReviewPage:${instanceId}] unmount`);}catch(e){} };
   }, []);
 
+  // Get unique positions and departments from fetched applications
+  const uniquePositions = useMemo(() => {
+    const positions = [...new Set(applications.map(app => app.jobTitle))];
+    try { console.debug('[HMReviewPage] uniquePositions count=', positions.length); } catch(e){}
+    return positions.sort();
+  }, [applications]);
+
   const uniqueDepartments = useMemo(() => {
-    const departments = [...new Set(mockApplications.map(app => app.department).filter(Boolean))];
+    const departments = [...new Set(applications.map(app => app.department).filter(Boolean))];
     return departments.sort();
-  }, []);
+  }, [applications]);
 
   // Filter and sort applications
   const filteredAndSortedApplications = useMemo(() => {
-    let filtered = mockApplications.filter(app => {
+  let filtered = applications.filter(app => {
       // Search filter
       const matchesSearch = searchTerm === '' || 
         app.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -79,7 +133,9 @@ export function HMReviewPage({ onReview }) {
     });
 
     return filtered;
-  }, [searchTerm, selectedPosition, selectedDepartment, selectedScoreRange, sortBy]);
+  }, [searchTerm, selectedPosition, selectedDepartment, selectedScoreRange, sortBy, applications]);
+
+  try { console.debug('[HMReviewPage] applications=', applications.length, 'filteredAndSorted=', filteredAndSortedApplications.length); } catch(e){}
 
   const pendingReview = filteredAndSortedApplications.filter(
     (app) => app.status === 'interview' && !app.evaluation
@@ -260,7 +316,7 @@ export function HMReviewPage({ onReview }) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-muted-foreground mb-1">รวมทั้งหมด</p>
-                <h3 className="text-2xl font-semibold">{mockApplications.length}</h3>
+                <h3 className="text-2xl font-semibold">{applications.length}</h3>
               </div>
               <div className="bg-primary/10 text-primary p-3 rounded-lg">
                 <Users className="size-6" />
@@ -457,7 +513,7 @@ export function HMReviewPage({ onReview }) {
       )}
 
       {/* empty state - no results from filter */}
-      {pendingReview.length === 0 && completedReview.length === 0 && filteredAndSortedApplications.length === 0 && mockApplications.length > 0 && (
+  {pendingReview.length === 0 && completedReview.length === 0 && filteredAndSortedApplications.length === 0 && applications.length > 0 && (
         <Card>
           <CardContent className="py-12 text-center">
             <Filter className="size-12 mx-auto text-muted-foreground mb-4" />
@@ -473,7 +529,7 @@ export function HMReviewPage({ onReview }) {
       )}
 
       {/* empty state - no applications at all */}
-      {mockApplications.length === 0 && (
+  {applications.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="size-12 mx-auto text-muted-foreground mb-4" />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { toast } from 'sonner';
-import { mockJobs } from '../../data/mockData';
+import { jobService } from '../../services/jobService';
 import { 
   Plus, 
   Search, 
@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 export function JobManagementPage() {
-  const [jobs, setJobs] = useState(mockJobs);
+  const [jobs, setJobs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -45,6 +45,20 @@ export function JobManagementPage() {
     responsibilities: '',
     closingDate: ''
   });
+
+  // load jobs from backend
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const resp = await jobService.getJobs();
+        if (mounted) setJobs(resp.data || []);
+      } catch (err) {
+        console.error('failed to load jobs', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // Filter jobs
   const filteredJobs = jobs.filter(job => {

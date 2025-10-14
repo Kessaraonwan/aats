@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
-import { mockApplications, mockJobs } from '../../data/mockData';
+import { jobService } from '../../services/jobService';
+import { applicationService } from '../../services/applicationService';
 import {
   BarChart3,
   TrendingUp,
@@ -27,69 +28,117 @@ import {
 export function HRReportsPage() {
   const [dateRange, setDateRange] = useState('month');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const jobsResp = await jobService.getJobs();
+        const appsResp = await applicationService.getApplications();
+        if (!mounted) return;
+        setJobs(jobsResp?.data || []);
+        const appsData = Array.isArray(appsResp?.data) ? appsResp.data : appsResp || [];
+        setApplications(appsData);
+      } catch (err) {
+        console.error('failed to load reports data', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // Calculate statistics
-  const totalApplications = mockApplications.length;
-  const activeJobs = mockJobs.filter(job => job.status === 'active').length;
-  const closedJobs = mockJobs.filter(job => job.status === 'closed').length;
+  const totalApplications = applications.length;
+  const activeJobs = jobs.filter(job => (job.status || 'active') === 'active').length;
+  const closedJobs = jobs.filter(job => (job.status || '') === 'closed').length;
 
   // Status breakdown
   const statusStats = {
-    submitted: mockApplications.filter(app => app.status === 'submitted').length,
-    screening: mockApplications.filter(app => app.status === 'screening').length,
-    interview: mockApplications.filter(app => app.status === 'interview').length,
-    offer: mockApplications.filter(app => app.status === 'offer').length,
-    hired: mockApplications.filter(app => app.status === 'hired').length,
-    rejected: mockApplications.filter(app => app.status === 'rejected').length,
-    withdrawn: mockApplications.filter(app => app.status === 'withdrawn').length
+    submitted: applications.filter(app => app.status === 'submitted').length,
+    screening: applications.filter(app => app.status === 'screening').length,
+    interview: applications.filter(app => app.status === 'interview').length,
+    offer: applications.filter(app => app.status === 'offer').length,
+    hired: applications.filter(app => app.status === 'hired').length,
+    rejected: applications.filter(app => app.status === 'rejected').length,
+    withdrawn: applications.filter(app => app.status === 'withdrawn').length
   };
 
   // Department breakdown
-  const departments = [...new Set(mockJobs.map(job => job.department))];
+  const departments = [...new Set(jobs.map(job => job.department))];
   const departmentStats = departments.map(dept => {
-    const deptJobs = mockJobs.filter(job => job.department === dept);
+    const deptJobs = jobs.filter(job => job.department === dept);
     const deptJobIds = deptJobs.map(job => job.id);
-    const deptApplications = mockApplications.filter(app => deptJobIds.includes(app.jobId));
-    
+    const deptApplications = applications.filter(app => deptJobIds.includes(app.job_id || app.jobId));
     return {
       name: dept,
       jobs: deptJobs.length,
       applications: deptApplications.length,
       hired: deptApplications.filter(app => app.status === 'hired').length,
-      avgApplicationsPerJob: deptApplications.length / deptJobs.length || 0
+      avgApplicationsPerJob: deptApplications.length / (deptJobs.length || 1) || 0
     };
   });
 
-  // Time-to-hire calculation (mock)
-  const avgTimeToHire = 21; // days
-  const prevAvgTimeToHire = 25;
+  // Time-to-hire calculation (approx from application data if present)
+  const avgTimeToHire = (() => {
+    // attempt to compute average diff between submitted -> hired if timeline present
+    const diffs = applications
+      .filter(a => a.status === 'hired')
+      .map(a => {
+        const created = new Date(a.created_at || a.submittedDate || a.submitted_at || 0).getTime();
+        const hiredAt = (() => {
+          // look for timeline or hired_at
+          if (a.hired_at) return new Date(a.hired_at).getTime();
+          if (a.timeline && Array.isArray(a.timeline)) {
+            const t = a.timeline.find(ti => ti.status === 'hired' || ti.status === 'offer');
+            if (t && t.date) return new Date(t.date).getTime();
+          }
+          return null;
+        })();
+        if (!created || !hiredAt) return null;
+        return Math.max(0, Math.round((hiredAt - created) / (1000 * 60 * 60 * 24)));
+      })
+      .filter(Boolean);
+    if (diffs.length === 0) return 21;
+    const sum = diffs.reduce((s, v) => s + v, 0);
+    return Math.round(sum / diffs.length);
+  })();
+
+  const prevAvgTimeToHire = avgTimeToHire + 4; // naive previous value
   const timeToHireChange = ((avgTimeToHire - prevAvgTimeToHire) / prevAvgTimeToHire * 100).toFixed(1);
 
   // Conversion rates
   const submittedToInterview = ((statusStats.interview / statusStats.submitted) * 100 || 0).toFixed(1);
   const interviewToOffer = ((statusStats.offer / statusStats.interview) * 100 || 0).toFixed(1);
   const offerToHired = ((statusStats.hired / statusStats.offer) * 100 || 0).toFixed(1);
-  const overallConversion = ((statusStats.hired / totalApplications) * 100 || 0).toFixed(1);
+  const overallConversion = ((statusStats.hired / Math.max(totalApplications, 1)) * 100 || 0).toFixed(1);
 
-  // Top performing jobs
-  const jobPerformance = mockJobs.map(job => {
-    const applications = mockApplications.filter(app => app.jobId === job.id);
-    const hired = applications.filter(app => app.status === 'hired').length;
+  // Top performing jobs based on real data
+  const jobPerformance = jobs.map(job => {
+    const jobApps = applications.filter(app => (app.job_id === job.id || app.jobId === job.id));
+    const hired = jobApps.filter(app => app.status === 'hired').length;
+    const conv = jobApps.length ? ((hired / jobApps.length) * 100) : 0;
     return {
       ...job,
-      applications: applications.length,
+      applications: jobApps.length,
       hired,
-      conversionRate: (hired / applications.length * 100 || 0).toFixed(1)
+      conversionRate: conv.toFixed(1)
     };
   }).sort((a, b) => b.applications - a.applications).slice(0, 5);
 
-  // Source tracking (mock data)
-  const sources = [
-    { name: 'เว็บไซต์บริษัท', applications: 25, percentage: 50, hired: 8 },
-    { name: 'LinkedIn', applications: 15, percentage: 30, hired: 5 },
-    { name: 'JobThai', applications: 7, percentage: 14, hired: 2 },
-    { name: 'Referral', applications: 3, percentage: 6, hired: 2 }
-  ];
+  // Source tracking - best-effort: if applications have source field use it, otherwise fallback to mock-like buckets
+  const sourceMap = {};
+  applications.forEach(a => {
+    const source = a.source || (a.data && a.data.source) || 'เว็บไซต์บริษัท';
+    sourceMap[source] = sourceMap[source] || { name: source, applications: 0, hired: 0 };
+    sourceMap[source].applications += 1;
+    if (a.status === 'hired') sourceMap[source].hired += 1;
+  });
+  const totalApps = applications.length || 1;
+  const sources = Object.values(sourceMap).map(s => ({
+    ...s,
+    percentage: Math.round((s.applications / totalApps) * 100)
+  })).sort((a, b) => b.applications - a.applications).slice(0, 6);
 
   const handleExport = (type) => {
     // Mock export functionality

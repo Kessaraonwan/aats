@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 fe/node_modules/
+be/vendor/
 
 # Environment files
 .env
@@ -12,6 +13,8 @@ fe/node_modules/
 # Build outputs
 fe/dist/
 fe/build/
+be/main
+be/*.exe
 
 # IDE files
 .vscode/
@@ -24,6 +27,20 @@ fe/build/
 Thumbs.db
 desktop.ini
 
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
 # Logs
 *.log
@@ -47,7 +64,7 @@ coverage/
 *.coverage
 
 # Go module cache
-# (removed - no Go modules in this workspace)
+go.sum
 
 # Frontend build artifacts
 fe/.vite/

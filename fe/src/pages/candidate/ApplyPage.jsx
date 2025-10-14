@@ -3,7 +3,7 @@ import { getJobById } from '../../data/mockData';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import EmailService from '../../services/emailMock';
+import EmailService from '../../services/emailService';
 
 export function ApplyPage({ jobId, onCancel, onSuccess }) {
   const [showSuccess, setShowSuccess] = useState(false);

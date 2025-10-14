@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { mockApplications } from '../../data/mockData';
+import { useMemo, useState, useEffect } from 'react';
+import { applicationService } from '../../services/applicationService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -13,6 +13,41 @@ import {
 export function HMReportsPage() {
   const [reportType, setReportType] = useState('summary'); // summary, detailed, performance
   const [timeRange, setTimeRange] = useState('month'); // week, month, quarter, year, all
+  const [applications, setApplications] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.__mockApplications) return window.__mockApplications;
+    } catch (e) {}
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState(!((typeof window !== 'undefined' && window.__mockApplications)));
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setIsLoading(true);
+        const resp = await applicationService.getApplications();
+        const apps = Array.isArray(resp?.data) ? resp.data : resp || [];
+        if (!mounted) return;
+        try {
+          const windowSrc = (typeof window !== 'undefined' && window.__mockApplications) ? window.__mockApplications : [];
+          const currentIds = Array.isArray(windowSrc) ? windowSrc.map(a => a.id).join(',') : '';
+          const srcIds = Array.isArray(apps) ? apps.map(a => a.id).join(',') : '';
+          if (currentIds !== srcIds) {
+            if (typeof window !== 'undefined') window.__mockApplications = apps;
+            setApplications(apps);
+          }
+        } catch (e) {
+          setApplications(apps);
+        }
+      } catch (err) {
+        console.error('failed to load HM reports data', err);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // Calculate comprehensive statistics
   const reportData = useMemo(() => {
@@ -33,7 +68,7 @@ export function HMReportsPage() {
       }
     };
 
-    const filteredApps = mockApplications.filter(filterByTime);
+  const filteredApps = applications.filter(filterByTime);
     const evaluatedApps = filteredApps.filter(app => app.evaluation);
 
     // Overall statistics

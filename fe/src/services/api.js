@@ -2,8 +2,7 @@
 import axios from 'axios';
 
 // Base API URL - change this based on environment
-// Point frontend to the new backend scaffold (port 8080)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
 // Create axios instance with default config
 const api = axios.create({

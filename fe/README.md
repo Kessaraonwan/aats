@@ -117,12 +117,9 @@ Built with **shadcn/ui** and **TailwindCSS**:
 ## 🌐 API Integration
 
 ### Base Configuration
-By default the frontend can run using built-in mock data. To point the app to a remote backend, set `VITE_API_URL` in your environment.
-
 ```javascript
 // src/services/api.js
-// API base is read from import.meta.env.VITE_API_URL; leave blank to use mocks
-const API_BASE_URL = import.meta.env.VITE_API_URL || ''
+const API_BASE_URL = 'http://localhost:8080/api'
 ```
 
 ### Service Files
@@ -236,7 +233,7 @@ npm run test
 
 ## 🔗 Related
 
--- Backend: this repo no longer includes a local backend; see `.env` to point to a remote API or use frontend mocks
+- Backend API: `/be` - Go REST API
 - Documentation: `SYSTEM-DOCUMENTATION.md`
 - Design System: `COLOR-GUIDE.md`
 

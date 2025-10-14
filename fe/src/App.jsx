@@ -16,14 +16,12 @@ import { HRDashboardPage, HRApplicantsPage, ApplicantDetailsPage, JobManagementP
 import { HMReviewPage, HMEvaluationPage, HMDashboardPage, HMNotificationsPage, HMReportsPage } from './pages/hm';
 
 // Pages - Shared
-import { LandingPage, LoginPage, AboutSystemPage, NotificationsPage } from './pages/shared';
+import { LandingPage, LoginPage, AboutSystemPage, NotificationsPage, EmailTestPage } from './pages/shared';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  // Allow opening EmailTestPage directly via URL hash (e.g. http://localhost:3000/#email-test)
-  const initialHash = typeof window !== 'undefined' && window.location && window.location.hash ? window.location.hash.replace('#', '') : null;
-  const [currentPage, setCurrentPage] = useState(initialHash || 'landing');
+  const [currentPage, setCurrentPage] = useState('landing');
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [selectedApplicationId, setSelectedApplicationId] = useState(null);
 
@@ -122,7 +120,9 @@ export default function App() {
         />
       );
     }
-    // Email test page removed
+    if (currentPage === 'email-test') {
+      return <EmailTestPage />;
+    }
 
     // Protected pages - require authentication
     if (!isAuthenticated || !currentUser) {

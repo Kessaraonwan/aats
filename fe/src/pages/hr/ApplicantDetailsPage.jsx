@@ -7,7 +7,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { StatusTimeline } from '../../components/candidate';
 import { ArrowLeft, Mail, Phone, FileText, Calendar, Star } from 'lucide-react';
 import { toast } from 'sonner';
-import EmailService from '../../services/emailMock';
+import EmailService from '../../services/emailService';
 
 const statusLabels = {
   submitted: 'ส่งใบสมัคร',

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StatusTimeline } from '../../components/candidate';
-import { mockApplications } from '../../data/mockData';
+import { applicationService } from '../../services/applicationService';
 import { Card, CardContent, CardHeader } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -21,15 +21,29 @@ import {
 // Removed unused type imports
 
 export function TrackStatusPage({ user, onNavigateToNotifications }) {
-  // Get current user's applications
-  // Show all applications for demo purposes, filter by user email in production
-  const userApplications = user?.email 
-    ? mockApplications.filter(app => app.candidateEmail === user.email)
-    : mockApplications; // Show all for demo if no user email
+  const [applications, setApplications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedApplication, setSelectedApplication] = useState(null);
 
-  const [selectedApplication, setSelectedApplication] = useState(
-    userApplications[0] || null
-  );
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setIsLoading(true);
+        const resp = await applicationService.getApplications();
+        const apps = Array.isArray(resp?.data) ? resp.data : resp || [];
+        if (!mounted) return;
+        const userApps = user?.email ? apps.filter(app => app.candidateEmail === user.email) : apps;
+        setApplications(userApps);
+        setSelectedApplication(userApps[0] || null);
+      } catch (err) {
+        console.error('failed to load candidate applications', err);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [user?.email]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -82,10 +96,10 @@ export function TrackStatusPage({ user, onNavigateToNotifications }) {
     }
   };
 
-  const activeApplications = userApplications.filter(app => 
+  const activeApplications = applications.filter(app => 
     app.status !== 'rejected' && app.status !== 'offer'
   );
-  const completedApplications = userApplications.filter(app => 
+  const completedApplications = applications.filter(app => 
     app.status === 'rejected' || app.status === 'offer'
   );
 
@@ -109,7 +123,7 @@ export function TrackStatusPage({ user, onNavigateToNotifications }) {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {userApplications.length === 0 ? (
+  {applications.length === 0 ? (
           <Card className="max-w-2xl mx-auto">
             <CardContent className="py-12 text-center">
               <FileText className="size-16 mx-auto text-muted-foreground mb-4" />
@@ -125,7 +139,7 @@ export function TrackStatusPage({ user, onNavigateToNotifications }) {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">ใบสมัครทั้งหมด</h3>
-                    <Badge variant="secondary">{userApplications.length}</Badge>
+                    <Badge variant="secondary">{applications.length}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">

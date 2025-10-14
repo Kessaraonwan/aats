@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { mockApplications } from '../../data/mockData';
+import { useState, useMemo, useEffect } from 'react';
+import { applicationService } from '../../services/applicationService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -12,13 +12,29 @@ import {
 export function HMNotificationsPage({ onNavigate, onReview }) {
   const [selectedTab, setSelectedTab] = useState('all');
   const [readNotifications, setReadNotifications] = useState(new Set());
+  const [applications, setApplications] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const resp = await applicationService.getApplications();
+        const apps = Array.isArray(resp?.data) ? resp.data : resp || [];
+        if (!mounted) return;
+        setApplications(apps);
+      } catch (err) {
+        console.error('failed to load applications for HMNotificationsPage', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // Generate notifications from applications
   const notifications = useMemo(() => {
     const notifs = [];
 
     // New applicants waiting for evaluation
-    const pendingApps = mockApplications.filter(
+    const pendingApps = applications.filter(
       app => app.status === 'interview' && !app.evaluation
     );
 
@@ -46,7 +62,7 @@ export function HMNotificationsPage({ onNavigate, onReview }) {
     });
 
     // High score applicants
-    const highScoreApps = mockApplications.filter(
+    const highScoreApps = applications.filter(
       app => app.preScreeningScore >= 85 && app.status === 'interview' && !app.evaluation
     );
 
@@ -69,7 +85,7 @@ export function HMNotificationsPage({ onNavigate, onReview }) {
     });
 
     // Recently evaluated (informational)
-    const recentEvaluated = mockApplications
+    const recentEvaluated = applications
       .filter(app => app.evaluation)
       .sort((a, b) => new Date(b.evaluation.evaluatedAt) - new Date(a.evaluation.evaluatedAt))
       .slice(0, 5);
@@ -95,7 +111,7 @@ export function HMNotificationsPage({ onNavigate, onReview }) {
 
     // Sort by timestamp (newest first)
     return notifs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }, [onReview]);
+  }, [onReview, applications]);
 
   // Filter notifications by type
   const filteredNotifications = useMemo(() => {

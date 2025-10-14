@@ -12,7 +12,7 @@ import {
   ArrowLeft,
   Trash2
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const mockNotifications = [
   { id: 'notif-1', type: 'success', title: 'คุณได้รับเชิญเข้าสัมภาษณ์!', message: 'สำหรับตำแหน่ง Senior Frontend Developer - กรุณาตรวจสอบอีเมลเพื่อดูรายละเอียดและยืนยันนัดหมาย', date: '2025-10-08T10:30:00', read: false, actionLabel: 'ดูรายละเอียด' },
@@ -24,7 +24,42 @@ const mockNotifications = [
 ];
 
 export function NotificationsPage({ onBack }) {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.__mockNotifications) return window.__mockNotifications;
+    } catch(e) {}
+    return mockNotifications;
+  });
+  // Rehydrate from window on mount (HMR-safe)
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const winNotifs = window.__mockNotifications || mockNotifications;
+        const currentIds = Array.isArray(notifications) ? notifications.map(n => n.id).join(',') : '';
+        const winIds = Array.isArray(winNotifs) ? winNotifs.map(n => n.id).join(',') : '';
+        if (currentIds !== winIds) {
+          console.debug('[NotificationsPage] rehydrate from window, count=', winNotifs.length);
+          setNotifications(winNotifs);
+        } else {
+          console.debug('[NotificationsPage] already in sync with window, count=', notifications.length);
+        }
+      }
+    } catch (e) { console.debug('[NotificationsPage] rehydrate error', e); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Persist notifications to window so HMR doesn't clear them
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const windowNotifs = window.__mockNotifications || [];
+        const currentIds = Array.isArray(windowNotifs) ? windowNotifs.map(n => n.id).join(',') : '';
+        const localIds = Array.isArray(notifications) ? notifications.map(n => n.id).join(',') : '';
+        if (currentIds !== localIds) {
+          window.__mockNotifications = notifications;
+        }
+      }
+    } catch (e) {}
+  }, [notifications]);
   const [filter, setFilter] = useState('all');
 
   const unreadCount = notifications.filter(n => !n.read).length;

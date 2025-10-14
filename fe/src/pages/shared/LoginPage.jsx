@@ -128,7 +128,7 @@ export function LoginPage({ onLogin, onBack }) {
               <div className="bg-white p-3 rounded border border-gray-200">
                 <p className="font-semibold text-gray-900 mb-1">ผู้สมัครงาน (Candidate):</p>
                 <p className="text-gray-600">Email: candidate@example.com</p>
-                <p className="text-gray-600">Password: password</p>
+                <p className="text-gray-600">Password: password123</p>
               </div>
               <div className="bg-white p-3 rounded border border-gray-200">
                 <p className="font-semibold text-gray-900 mb-1">HR (ฝ่ายทรัพยากรบุคคล):</p>
