@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: aats-postgres
+    environment:
+      POSTGRES_DB: aats_db
+      POSTGRES_USER: aats_user
+      POSTGRES_PASSWORD: aats_password
+    ports:
+      - "5433:5432"   # เปลี่ยนจาก 5432:5432 เป็น 5433:5432
+    # Use a named Docker volume for postgres data to avoid host bind-mount
+    # permission issues on Windows. Using a named volume lets Docker manage
+    # ownership and avoids initdb permission errors.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aats_user -d aats_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+    driver: local

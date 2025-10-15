@@ -1,0 +1,74 @@
+# Dependencies
+node_modules/
+fe/node_modules/
+be/vendor/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Build outputs
+fe/dist/
+fe/build/
+be/main
+be/*.exe
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Docker
+.docker/
+
+# Backup files
+*backup*
+*.bak
+
+# Coverage reports
+coverage/
+*.cover
+*.coverage
+
+# Go module cache
+go.sum
+
+# Frontend build artifacts
+fe/.vite/
+fe/.turbo/
+
+# Database migrations (if any)
+*.sql.backup

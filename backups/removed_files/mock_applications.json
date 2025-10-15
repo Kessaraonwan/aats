@@ -1,0 +1,12 @@
+[
+  {
+    "id": "app-1",
+    "jobId": "job-1",
+    "jobTitle": "พนักงานขาย",
+    "candidateName": "สมชาย ใจดี",
+    "candidateEmail": "somchai.jaidee@example.com",
+    "resume": "somchai-resume.pdf",
+    "status": "interview",
+    "submittedDate": "2025-09-28"
+  }
+]

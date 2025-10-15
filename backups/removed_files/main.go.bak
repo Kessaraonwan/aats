@@ -1,0 +1,31 @@
+﻿package main
+
+import (
+"log"
+"os"
+
+"github.com/gin-gonic/gin"
+"github.com/joho/godotenv"
+
+"aats-backend-clean/middleware"
+"aats-backend-clean/models"
+)
+
+func main() {
+_ = godotenv.Load(".env")
+
+models.ConnectDatabase() // ใช้ Postgres ตาม DATABASE_URL
+r := gin.Default()
+r.Use(middleware.CORS())
+
+r.GET("/health", func(c *gin.Context) {
+c.JSON(200, gin.H{"status": "ok"})
+})
+
+port := os.Getenv("PORT")
+if port == "" {
+port = "8080"
+}
+log.Println(" Listening on :" + port)
+r.Run(":" + port)
+}
