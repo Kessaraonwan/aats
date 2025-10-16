@@ -98,7 +98,7 @@ export function LoginPage({ onLogin, onBack }) {
             <br />
             สำหรับผู้นำด้านค้าปลีกและค้าส่งสินค้าไอทีของประเทศไทย
           </p>
-          <div className="space-y-4">ท
+          <div className="space-y-4">
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 rounded-full bg-blue-600 mt-2" />
               <div>

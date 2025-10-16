@@ -1,4 +1,7 @@
 // dev.go
+// ไฟล์นี้ใช้สำหรับ seed ข้อมูลตัวอย่างในระบบ (dev/debug เท่านั้น)
+// ประกอบด้วย endpoint สำหรับสร้างข้อมูลผู้ใช้ งาน ตำแหน่งงาน ใบสมัคร timeline โน้ต และการประเมิน
+// เหมาะสำหรับทดสอบระบบหรือ demo
 package handlers
 
 import (
@@ -18,22 +21,25 @@ import (
 
 // POST /api/dev/seed (enriched seed, idempotent + safer)
 func SeedDev(c *gin.Context) {
-	// เปิดใช้เฉพาะโหมด dev/debug เท่านั้น
+		// เปิดใช้เฉพาะโหมด dev/debug เท่านั้น
+		// ถ้าไม่ใช่ debug mode จะไม่อนุญาตให้ seed ข้อมูล
 	if gin.Mode() != gin.DebugMode {
 		c.JSON(http.StatusForbidden, gin.H{"ok": false, "error": "dev seed is disabled in non-debug mode"})
 		return
 	}
 
-	now := time.Now().UTC()
-	tx := models.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "seed panic"})
-		}
-	}()
+	   now := time.Now().UTC()
+	   tx := models.DB.Begin()
+	   // ใช้ transaction เพื่อความปลอดภัย rollback ได้ถ้า error หรือ panic
+	   defer func() {
+		   if r := recover(); r != nil {
+			   tx.Rollback()
+			   c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "seed panic"})
+		   }
+	   }()
 
-	// --- USERS ---
+		// --- USERS ---
+		// สร้างผู้ใช้ตัวอย่าง 3 กลุ่ม: HR, HM, Candidate
 	usersData := []struct {
 		Email, Password, Role, Name, Phone string
 	}{
@@ -46,7 +52,8 @@ func SeedDev(c *gin.Context) {
 	}
 	created := map[string]models.User{}
 
-	for _, u := range usersData {
+	   for _, u := range usersData {
+		   // สร้าง user ใหม่หรืออัปเดตถ้ามี email นี้อยู่แล้ว
 		hash, _ := utils.HashPassword(u.Password)
 		dept, pos := "General", "Staff"
 		switch u.Role {
@@ -78,7 +85,8 @@ func SeedDev(c *gin.Context) {
 		created[u.Email] = found
 	}
 
-	// --- JOBS (key: title+department) ---
+		// --- JOBS (key: title+department) ---
+		// สร้างตำแหน่งงานตัวอย่าง 4 ตำแหน่ง
 	jobs := []models.JobPosting{
 		{
 			Title:            "พนักงานขาย",
@@ -142,7 +150,8 @@ func SeedDev(c *gin.Context) {
 		},
 	}
 	jobMap := map[string]string{}
-	for i := range jobs {
+	   for i := range jobs {
+		   // สร้าง job ใหม่หรืออัปเดตถ้ามี title+department ซ้ำ
 		// ensure a stable unique ID is available when creating new job rows
 		if jobs[i].ID == "" {
 			jobs[i].ID = uuid.NewString()
@@ -160,7 +169,8 @@ func SeedDev(c *gin.Context) {
 		jobMap[j.Title+"|"+j.Department] = rec.ID
 	}
 
-	// --- APPLICATIONS (key: job_id + applicant_id) ---
+		// --- APPLICATIONS (key: job_id + applicant_id) ---
+		// สร้างใบสมัครงานตัวอย่าง 4 รายการ (แต่ละ candidate สมัครงานต่างกัน)
 	appOf := func(title, dept, email, status, cv, cover, edu, exp, skills string, submitted time.Time) models.Application {
 		return models.Application{
 			ID:            uuid.NewString(),
@@ -211,7 +221,8 @@ func SeedDev(c *gin.Context) {
 	)
 
 	apps := []*models.Application{&app1, &app2, &app3, &app4}
-	for _, a := range apps {
+	   for _, a := range apps {
+		   // สร้าง application ใหม่หรืออัปเดตถ้ามี job_id+applicant_id ซ้ำ
 		var found models.Application
 		if err := tx.Where("job_id = ? AND applicant_id = ?", a.JobID, a.ApplicantID).
 			Assign(*a).
@@ -223,7 +234,9 @@ func SeedDev(c *gin.Context) {
 		a.ID = found.ID // sync id if record already existed
 	}
 
-	// --- TIMELINES (dedupe by [appID,status,day]) ---
+		// --- TIMELINES (dedupe by [appID,status,day]) ---
+		// สร้าง timeline เหตุการณ์ของแต่ละใบสมัคร (เช่น submitted, interview)
+		// ป้องกันการสร้างซ้ำในวันเดียวกันด้วย status เดิม
 	addTL := func(appID, status, desc string, at time.Time) error {
 		dayStart := time.Date(at.Year(), at.Month(), at.Day(), 0, 0, 0, 0, time.UTC)
 		dayEnd := dayStart.Add(24 * time.Hour)
@@ -255,7 +268,9 @@ func SeedDev(c *gin.Context) {
 	_ = addTL(app4.ID, "offer", "เสนอข้อเสนอ", app4.SubmittedDate.AddDate(0, 0, 14))
 	_ = addTL(app4.ID, "hired", "รับเข้าทำงานแล้ว", app4.SubmittedDate.AddDate(0, 0, 30))
 
-	// --- EVALUATIONS (1:1 keep first) ---
+		// --- EVALUATIONS (1:1 keep first) ---
+		// สร้างการประเมินใบสมัคร (แต่ละ application มี 1 evaluation)
+		// ถ้ามีอยู่แล้วจะไม่สร้างซ้ำ
 	putEval := func(e models.Evaluation) error {
 		var found models.Evaluation
 		if err := tx.Where("application_id = ?", e.ApplicationID).First(&found).Error; err == nil {
@@ -289,7 +304,8 @@ func SeedDev(c *gin.Context) {
 		return
 	}
 
-	// --- NOTES (dedupe by app+content per day) ---
+		// --- NOTES (dedupe by app+content per day) ---
+		// สร้างโน้ตประกอบใบสมัคร (ป้องกันซ้ำด้วย app+content+วัน)
 	putNote := func(n models.Note) error {
 		if n.CreatedAt.IsZero() {
 			n.CreatedAt = now
@@ -326,7 +342,8 @@ func SeedDev(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+		// ส่ง response กลับเมื่อ seed สำเร็จ
+		c.JSON(http.StatusOK, gin.H{
 		"ok": true,
 		"data": gin.H{
 			"users": gin.H{
@@ -343,14 +360,15 @@ func SeedDev(c *gin.Context) {
 
 // POST /api/dev/seed_more - create additional sample candidates + applications
 func SeedMore(c *gin.Context) {
-	if gin.Mode() != gin.DebugMode {
+		// Endpoint นี้ใช้สำหรับสร้างผู้สมัครและใบสมัครจำนวนมาก (bulk seed)
+		if gin.Mode() != gin.DebugMode {
 		c.JSON(http.StatusForbidden, gin.H{"ok": false, "error": "dev seed is disabled in non-debug mode"})
 		return
 	}
 
-	candidates := 10
-	appsPer := 2
-	var rngSeed int64 = time.Now().Unix()
+		candidates := 10 // จำนวน candidate ที่จะสร้าง (default 10)
+		appsPer := 2     // จำนวนใบสมัครต่อ candidate (default 2)
+		var rngSeed int64 = time.Now().Unix() // ใช้ seed สำหรับสุ่มข้อมูล
 
 	if v := c.Query("candidates"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 1000 {
@@ -368,14 +386,15 @@ func SeedMore(c *gin.Context) {
 		}
 	}
 
-	r := rand.New(rand.NewSource(rngSeed))
-	tx := models.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "seed_more panic"})
-		}
-	}()
+	   r := rand.New(rand.NewSource(rngSeed))
+	   tx := models.DB.Begin()
+	   // ใช้ transaction เพื่อ rollback ได้ถ้า error
+	   defer func() {
+		   if r := recover(); r != nil {
+			   tx.Rollback()
+			   c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "seed_more panic"})
+		   }
+	   }()
 
 	// name pools
 	firstNames := []string{"nattapol", "sunthorn", "apichai", "kamon", "anan", "tanawut", "warin", "parinya", "jiraporn", "kotchaporn", "siwakorn", "thitipong", "patcharee"}
@@ -396,7 +415,8 @@ func SeedMore(c *gin.Context) {
 	}
 
 	created := map[string]models.User{}
-	for i := 1; i <= candidates; i++ {
+	   for i := 1; i <= candidates; i++ {
+		   // สร้าง user candidate ใหม่หรืออัปเดตถ้ามี email ซ้ำ
 		fn := firstNames[r.Intn(len(firstNames))]
 		ln := lastNames[r.Intn(len(lastNames))]
 		name := strings.ToUpper(fn[:1]) + fn[1:] + " " + strings.ToUpper(ln[:1]) + ln[1:]
@@ -427,8 +447,9 @@ func SeedMore(c *gin.Context) {
 
 	appsCreated := []string{}
 	idx := 0
-	for _, u := range created {
-		for j := 0; j < appsPer; j++ {
+	   for _, u := range created {
+		   for j := 0; j < appsPer; j++ {
+			   // สร้างใบสมัครใหม่หรืออัปเดตถ้ามี job_id+applicant_id ซ้ำ
 			job := jobs[idx%len(jobs)]
 			app := models.Application{
 				ID:            uuid.NewString(),
@@ -454,7 +475,8 @@ func SeedMore(c *gin.Context) {
 			}
 			appsCreated = append(appsCreated, existing.ID)
 
-			// timeline submitted (dedupe by day)
+			   // timeline submitted (dedupe by day)
+			   // สร้าง timeline เหตุการณ์ submitted ถ้ายังไม่มีในวันนั้น
 			dayStart := time.Date(existing.SubmittedDate.Year(), existing.SubmittedDate.Month(), existing.SubmittedDate.Day(), 0, 0, 0, 0, time.UTC)
 			dayEnd := dayStart.Add(24 * time.Hour)
 			var tl models.ApplicationTimeline
@@ -477,7 +499,8 @@ func SeedMore(c *gin.Context) {
 				}
 			}
 
-			// note บางส่วน (หากยังไม่มี)
+			   // note บางส่วน (หากยังไม่มี)
+			   // สร้างโน้ตประกอบใบสมัคร (เฉพาะบางใบสมัคร)
 			var noteCnt int64
 			tx.Model(&models.Note{}).Where("application_id = ?", existing.ID).Count(&noteCnt)
 			if noteCnt == 0 && (idx%3 == 0) {
@@ -497,7 +520,8 @@ func SeedMore(c *gin.Context) {
 				}
 			}
 
-			// evaluation บางส่วน (ถ้ายังไม่มี)
+			   // evaluation บางส่วน (ถ้ายังไม่มี)
+			   // สร้างการประเมินใบสมัคร (เฉพาะบางใบสมัคร)
 			var evalCnt int64
 			tx.Model(&models.Evaluation{}).Where("application_id = ?", existing.ID).Count(&evalCnt)
 			if evalCnt == 0 && (idx%4 == 0) {
@@ -528,7 +552,8 @@ func SeedMore(c *gin.Context) {
 		}
 	}
 
-	if err := tx.Commit().Error; err != nil {
+		// ส่ง response กลับเมื่อ seed สำเร็จ
+		if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": err.Error()})
 		return
 	}
@@ -538,20 +563,22 @@ func SeedMore(c *gin.Context) {
 
 // POST /api/dev/seed_more_fill - populate timelines/notes/evaluations for seed apps
 func SeedMoreFill(c *gin.Context) {
-	if gin.Mode() != gin.DebugMode {
+		// Endpoint นี้ใช้สำหรับเติม timeline/notes/evaluations ให้กับใบสมัครที่ seed ไว้
+		if gin.Mode() != gin.DebugMode {
 		c.JSON(http.StatusForbidden, gin.H{"ok": false, "error": "dev seed is disabled in non-debug mode"})
 		return
 	}
 
-	tx := models.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "seed_more_fill panic"})
-		}
-	}()
+	   tx := models.DB.Begin()
+	   // ใช้ transaction เพื่อ rollback ได้ถ้า error
+	   defer func() {
+		   if r := recover(); r != nil {
+			   tx.Rollback()
+			   c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": "seed_more_fill panic"})
+		   }
+	   }()
 
-	// หา applications ที่ดูเหมือนข้อมูล seed
+		// หา applications ที่ดูเหมือนข้อมูล seed (cover_letter ขึ้นต้นด้วย "สมัครเพื่อทดสอบข้อมูล")
 	var apps []models.Application
 	tx.Where("cover_letter LIKE ?", "สมัครเพื่อทดสอบข้อมูล %").Find(&apps)
 	if len(apps) == 0 {
@@ -560,13 +587,14 @@ func SeedMoreFill(c *gin.Context) {
 		return
 	}
 
-	// hr/hm สำหรับใส่โน้ต/ประเมิน
+		// hr/hm สำหรับใส่โน้ต/ประเมิน
 	var hrUser, hmUser models.User
 	tx.Where("email = ?", "hr@aats.com").First(&hrUser)
 	tx.Where("email = ?", "hm@aats.com").First(&hmUser)
 
 	createdTL, createdNotes, createdEvals := 0, 0, 0
-	for i, a := range apps {
+	   for i, a := range apps {
+		   // เติม timeline submitted ถ้ายังไม่มี
 		// timeline หากยังไม่มี
 		var cnt int64
 		tx.Model(&models.ApplicationTimeline{}).Where("application_id = ?", a.ID).Count(&cnt)
@@ -593,6 +621,7 @@ func SeedMoreFill(c *gin.Context) {
 		}
 
 		// note (ถ้ายังไม่มี) — จำกัดประมาณ 10 รายการพอ
+		// เติมโน้ตอัตโนมัติให้ใบสมัคร (สูงสุด 10 รายการ)
 		tx.Model(&models.Note{}).Where("application_id = ?", a.ID).Count(&cnt)
 		if cnt == 0 && createdNotes < 10 {
 			n := models.Note{
@@ -609,6 +638,7 @@ func SeedMoreFill(c *gin.Context) {
 		}
 
 		// evaluation (ถ้ายังไม่มี) — จำกัดประมาณ 8 รายการพอ
+		// เติมการประเมินอัตโนมัติให้ใบสมัคร (สูงสุด 8 รายการ)
 		tx.Model(&models.Evaluation{}).Where("application_id = ?", a.ID).Count(&cnt)
 		if cnt == 0 && createdEvals < 8 {
 			ev := models.Evaluation{
@@ -632,7 +662,8 @@ func SeedMoreFill(c *gin.Context) {
 		}
 	}
 
-	if err := tx.Commit().Error; err != nil {
+		// ส่ง response กลับเมื่อเติมข้อมูลสำเร็จ
+		if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": err.Error()})
 		return
 	}

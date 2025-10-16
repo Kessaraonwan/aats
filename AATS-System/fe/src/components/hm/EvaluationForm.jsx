@@ -330,18 +330,17 @@ export function EvaluationForm({ application, onSubmit, onCancel, submitting = f
   };
 
   const validateForm = () => {
-    // Check if all criteria have been evaluated (not default 3)
+    // เดิมถือว่าคะแนน 3 คือยังไม่ได้ประเมิน (ผิด)
+    // แก้เป็น: ทุกคะแนน 1-5 ถือว่าประเมินแล้ว (default เฉยๆ เฉพาะ neutral ใน hiringRecommendation)
     const allCriteria = evaluationCategories.flatMap(cat => cat.criteria.map(c => c.key));
-    const unevaluated = allCriteria.filter(key => evaluation[key] === 3);
-    
-    // Check if hiring recommendation is selected
-    const hasRecommendation = evaluation.hiringRecommendation !== 'neutral';
-    
+    // ไม่ต้องกรอง 3 แล้ว
+    const unevaluated = [];
+    // Check if hiring recommendation is selected (neutral = เฉยๆ, ถือว่าเลือกได้)
+    const hasRecommendation = evaluation.hiringRecommendation !== '';
     // Check if comments are filled
     const hasComments = evaluation.strengths.trim() !== '' || evaluation.areasForImprovement.trim() !== '';
-    
     return {
-      isValid: unevaluated.length === 0 && hasRecommendation && hasComments,
+      isValid: hasRecommendation && hasComments,
       unevaluatedCriteria: unevaluated,
       missingRecommendation: !hasRecommendation,
       missingComments: !hasComments
@@ -595,13 +594,15 @@ export function EvaluationForm({ application, onSubmit, onCancel, submitting = f
                   return (
                   <div 
                     key={criterionIndex} 
-                    className={`space-y-3 p-4 rounded-lg border-2 transition-all ${
-                      hasValidationError 
-                        ? 'bg-red-50 border-red-300 animate-pulse' 
-                        : isDefault
-                        ? 'bg-yellow-50 border-yellow-200 hover:border-yellow-300'
-                        : 'bg-gradient-to-br from-white to-muted border-border/50 hover:border-primary/30'
-                    }`}
+                    className={`space-y-3 p-4 rounded-lg border-2 transition-all
+                      ${hasValidationError ? 'bg-red-50 border-red-300 animate-pulse'
+                        : evaluation[criterion.key] === 1 ? 'bg-red-50 border-red-400'
+                        : evaluation[criterion.key] === 2 ? 'bg-orange-50 border-orange-300'
+                        : evaluation[criterion.key] === 3 ? 'bg-yellow-50 border-yellow-300'
+                        : evaluation[criterion.key] === 4 ? 'bg-blue-50 border-blue-300'
+                        : evaluation[criterion.key] === 5 ? 'bg-green-50 border-green-400'
+                        : 'bg-gradient-to-br from-white to-muted border-border/50 hover:border-primary/30'}
+                    `}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">

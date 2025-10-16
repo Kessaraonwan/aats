@@ -1,0 +1,274 @@
+{
+  "info": {
+    "_postman_id": "b3a7f5c6-0000-4000-8000-000000000000",
+    "name": "VEGA SA BIS Recruitment API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection generated from openapi.yaml and test-api.js. Contains example requests for register, login, me, jobs, applications, users."
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"สมชาย ใจดี\",\n  \"phone\": \"081-234-5678\",\n  \"role\": \"candidate\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/register",
+              "protocol": "http",
+              "host": [ "localhost" ],
+              "port": "8080",
+              "path": [ "api", "auth", "register" ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/auth/login",
+              "protocol": "http",
+              "host": [ "localhost" ],
+              "port": "8080",
+              "path": [ "api", "auth", "login" ]
+            }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/auth/me",
+              "protocol": "http",
+              "host": [ "localhost" ],
+              "port": "8080",
+              "path": [ "api", "auth", "me" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "Get all jobs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/jobs",
+              "protocol": "http",
+              "host": [ "localhost" ],
+              "port": "8080",
+              "path": [ "api", "jobs" ]
+            }
+          }
+        },
+        {
+          "name": "Create job",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Software Engineer\",\n  \"description\": \"ตำแหน่งนักพัฒนาซอฟต์แวร์\",\n  \"location\": \"Bangkok\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/jobs",
+              "protocol": "http",
+              "host": [ "localhost" ],
+              "port": "8080",
+              "path": [ "api", "jobs" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "Get all applications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/applications",
+              "protocol": "http",
+              "host": [ "localhost" ],
+              "port": "8080",
+              "path": [ "api", "applications" ]
+            }
+          }
+        },
+        {
+          "name": "Create application",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": 1,\n  \"user_id\": 1,\n  \"cover_letter\": \"ฉันสนใจตำแหน่งนี้ครับ\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/applications",
+              "protocol": "http",
+              "host": [ "localhost" ],
+              "port": "8080",
+              "path": [ "api", "applications" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get all users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/users",
+              "protocol": "http",
+              "host": [ "localhost" ],
+              "port": "8080",
+              "path": [ "api", "users" ]
+            }
+          }
+        },
+        {
+          "name": "Create user",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"ทดสอบ ผู้ใช้\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/users",
+              "protocol": "http",
+              "host": [ "localhost" ],
+              "port": "8080",
+              "path": [ "api", "users" ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Collection-level tests and token extraction",
+          "// 1) Try to parse JSON and extract token from multiple possible fields",
+          "try {",
+          "  const json = pm.response.json();",
+          "  const tokenPaths = [ 'data.token', 'token', 'access_token', 'data.access_token', 'accessToken', 'result.token' ];",
+          "  let token = null;",
+          "  for (let p of tokenPaths) {",
+          "    const parts = p.split('.');",
+          "    let v = json;",
+          "    for (let part of parts) {",
+          "      if (v && Object.prototype.hasOwnProperty.call(v, part)) {",
+          "        v = v[part];",
+          "      } else { v = undefined; break; }",
+          "    }",
+          "    if (v) { token = v; break; }",
+          "  }",
+          "  if (token) {",
+          "    // Save token to environment and collection variables so other requests can use it",
+          "    pm.environment.set('auth_token', token);",
+          "    pm.collectionVariables.set('auth_token', token);",
+          "    console.log('Saved auth_token from response');",
+          "  }",
+          "} catch (e) {",
+          "  // response was not JSON or parsing failed",
+          "}",
+          "",
+          "// 2) Generic status code test (allow common success codes)",
+          "pm.test('Status code is a success (200/201/204)', function () {",
+          "  pm.expect(pm.response.code).to.be.oneOf([200,201,204]);",
+          "});",
+          "",
+          "// 3) If response is JSON, do some light validations and special-cases for auth endpoints",
+          "try {",
+          "  const json = pm.response.json();",
+          "  pm.test('Response is valid JSON', function () {",
+          "    pm.expect(json).to.be.ok;",
+          "  });",
+          "",
+          "  const reqName = (pm.info && pm.info.requestName) ? pm.info.requestName : '';",
+          "  // For login/register requests, ensure a token is present in one of the common fields",
+          "  if (/login|register/i.test(reqName)) {",
+          "    pm.test('Auth response contains a token', function () {",
+          "      const hasToken = !!( (json && json.data && json.data.token) || json.token || json.access_token || json.accessToken );",
+          "      pm.expect(hasToken).to.be.true;",
+          "    });",
+          "  }",
+          "",
+          "  // For 'Get all' style requests, expect the body or json.data to be an array",
+          "  if (/get all|get all jobs|get jobs|get all applications|get applications|get all users/i.test(reqName)) {",
+          "    pm.test('Response contains an array (data or top-level)', function () {",
+          "      const arr = json && json.data ? json.data : json;",
+          "      pm.expect(Array.isArray(arr) || Array.isArray(json)).to.be.true;",
+          "    });",
+          "  }",
+          "} catch (e) {",
+          "  // ignore if response is not JSON",
+          "}",
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" },
+    { "key": "auth_token", "value": "" }
+  ]
+}

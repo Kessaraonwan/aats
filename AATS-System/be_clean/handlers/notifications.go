@@ -1,55 +1,58 @@
-package handlers
+package handlers // แพ็กเกจ handlers สำหรับจัดการ API endpoint
 
 import (
-    "net/http"
-    "sort"
-    "strconv"
+    "net/http"      // สำหรับ HTTP status และ response
+    "sort"          // สำหรับเรียงลำดับ slice
+    "strconv"       // สำหรับแปลง string/number
 
-    "github.com/gin-gonic/gin"
+    "github.com/gin-gonic/gin" // Gin framework สำหรับสร้าง API
 
-    "aats-backend-clean/models"
-    "gorm.io/gorm"
-    glogger "gorm.io/gorm/logger"
+    "aats-backend-clean/models" // import models สำหรับเชื่อมต่อ DB
+    "gorm.io/gorm"              // สำหรับ session DB
+    glogger "gorm.io/gorm/logger" // สำหรับ silent logger
 )
 
-// GET /api/notifications/aggregate?user_id=&limit=
+// ฟังก์ชันสำหรับรวม notification (GET /api/notifications/aggregate?user_id=&limit=)
+// ใช้สำหรับดึงข้อมูลการแจ้งเตือน timeline และ evaluation ล่าสุด
 func AggregateNotifications(c *gin.Context) {
-    userID := c.Query("user_id")
-    limitStr := c.DefaultQuery("limit", "50")
+    userID := c.Query("user_id") // รับ user_id จาก query string
+    limitStr := c.DefaultQuery("limit", "50") // รับ limit (จำนวนสูงสุด) จาก query string
     limit, _ := strconv.Atoi(limitStr)
 
-    // load recent timeline entries
+    // โหลดข้อมูล timeline ล่าสุด
     var timelines []models.ApplicationTimeline
     if err := models.DB.Order("date desc").Limit(limit).Find(&timelines).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "cannot fetch timeline"})
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "cannot fetch timeline"}) // error ถ้า query ไม่สำเร็จ
         return
     }
 
-    // load recent evaluations
+    // โหลดข้อมูล evaluation ล่าสุด
     var evaluations []models.Evaluation
     _ = models.DB.Order("evaluated_at desc").Limit(limit).Find(&evaluations).Error
 
+    // โครงสร้างข้อมูล notification
     type Notif struct {
-        ID        string      `json:"id"`
-        Type      string      `json:"type"`
-        Title     string      `json:"title"`
-        Message   string      `json:"message"`
-        Payload   interface{} `json:"payload,omitempty"`
-        Timestamp int64       `json:"timestamp"`
+        ID        string      `json:"id"`         // รหัส notification
+        Type      string      `json:"type"`       // ประเภท (info/success)
+        Title     string      `json:"title"`      // หัวข้อ
+        Message   string      `json:"message"`    // ข้อความ
+        Payload   interface{} `json:"payload,omitempty"` // ข้อมูลเพิ่มเติม
+        Timestamp int64       `json:"timestamp"`  // เวลาที่เกิดเหตุการณ์
     }
 
-    var notifs []Notif
+    var notifs []Notif // slice สำหรับเก็บ notification
 
+    // สร้าง notification จาก timeline
     for _, t := range timelines {
         if t.ApplicationID == "" {
-            continue
+            continue // ข้ามถ้าไม่มี application id
         }
         var app models.Application
         if err := models.DB.Where("id = ?", t.ApplicationID).First(&app).Error; err != nil {
-            continue
+            continue // ข้ามถ้าไม่พบ application
         }
         if userID != "" && app.ApplicantID != userID {
-            continue
+            continue // ข้ามถ้าไม่ใช่ของ user นี้
         }
         var job models.JobPosting
         title := "การอัปเดตสถานะการสมัคร"
@@ -57,7 +60,7 @@ func AggregateNotifications(c *gin.Context) {
             dbSilent := models.DB.Session(&gorm.Session{Logger: glogger.Default.LogMode(glogger.Silent)})
             _ = dbSilent.Where("id = ?", app.JobID).First(&job).Error
             if job.Title != "" {
-                title = "สถานะใบสมัคร: " + job.Title
+                title = "สถานะใบสมัคร: " + job.Title // ถ้ามี job title ให้แสดงในหัวข้อ
             }
         }
         notifs = append(notifs, Notif{
@@ -70,16 +73,17 @@ func AggregateNotifications(c *gin.Context) {
         })
     }
 
+    // สร้าง notification จาก evaluation
     for _, e := range evaluations {
         if e.ApplicationID == "" {
-            continue
+            continue // ข้ามถ้าไม่มี application id
         }
         var app models.Application
         if err := models.DB.Where("id = ?", e.ApplicationID).First(&app).Error; err != nil {
-            continue
+            continue // ข้ามถ้าไม่พบ application
         }
         if userID != "" && app.ApplicantID != userID {
-            continue
+            continue // ข้ามถ้าไม่ใช่ของ user นี้
         }
         notifs = append(notifs, Notif{
             ID:        "eval-" + e.ID,
@@ -91,10 +95,12 @@ func AggregateNotifications(c *gin.Context) {
         })
     }
 
+    // เรียงลำดับ notification ตามเวลาใหม่สุดไปเก่าสุด
     sort.Slice(notifs, func(i, j int) bool { return notifs[i].Timestamp > notifs[j].Timestamp })
     if len(notifs) > limit {
-        notifs = notifs[:limit]
+        notifs = notifs[:limit] // จำกัดจำนวนตาม limit
     }
 
+    // ส่ง notification กลับแบบ JSON
     c.JSON(http.StatusOK, gin.H{"ok": true, "notifications": notifs})
 }
